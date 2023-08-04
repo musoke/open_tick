@@ -67,6 +67,23 @@ pub enum MountainProjectLeadStyle {
     Redpoint,
 }
 
+#[non_exhaustive]
+#[derive(Debug, PartialEq)]
+pub enum MountainProjectRouteType {
+    Sport,
+    TR,
+    Trad,
+    Unknown,
+}
+
+impl<'a> From<&'a str> for MountainProjectRouteType {
+    fn from(value: &'a str) -> Self {
+        match value {
+            _ => MountainProjectRouteType::Unknown,
+        }
+    }
+}
+
 /// ID of a route in Mountain Project's database
 ///
 /// # Examples

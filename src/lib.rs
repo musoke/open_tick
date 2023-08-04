@@ -1,7 +1,12 @@
 use chrono::NaiveDate;
 
 pub mod mountain_project;
+pub mod thecrag;
+
+use mountain_project::MountainProjectRouteType;
 use mountain_project::MountainProjectTick;
+use thecrag::TheCragGearStyle;
+use thecrag::TheCragTick;
 
 /// A tick
 ///
@@ -19,15 +24,46 @@ pub struct OpenTick<'a> {
     /// Location of the route
     pub route_location: Option<&'a str>,
     /// Type of route as most often climbed
-    pub route_discipline: Option<&'a str>,
+    pub route_discipline: Option<Discipline>,
     /// Type of route as climbed in this ascent
-    pub ascent_discipline: Option<&'a str>,
+    pub ascent_discipline: Option<Discipline>,
     /// Consensus grade of the route
     pub route_grade: Option<&'a str>,
     /// Personal grade, for this ascent
     pub ascent_grade: Option<&'a str>,
     /// Free-form comments
     pub comment: Option<&'a str>,
+}
+
+/// Disciplines
+#[non_exhaustive]
+#[derive(Debug, PartialEq)]
+pub enum Discipline {
+    Aid,
+    Bouldering,
+    DeepWaterSolo,
+    Ice,
+    Sport,
+    Trad,
+    Unknown,
+}
+
+impl From<MountainProjectRouteType> for Discipline {
+    fn from(value: MountainProjectRouteType) -> Self {
+        match value {
+            MountainProjectRouteType::Unknown => Discipline::Unknown,
+            _ => Discipline::Unknown,
+        }
+    }
+}
+
+impl From<TheCragGearStyle> for Discipline {
+    fn from(value: TheCragGearStyle) -> Self {
+        match value {
+            TheCragGearStyle::Boulder => Discipline::Bouldering,
+            _ => Discipline::Unknown,
+        }
+    }
 }
 
 impl<'a> TryFrom<MountainProjectTick<'a>> for OpenTick<'a> {
@@ -37,7 +73,9 @@ impl<'a> TryFrom<MountainProjectTick<'a>> for OpenTick<'a> {
         let date = value.date;
         let route_name = Some(value.route);
         let route_location = Some(value.location);
-        let route_discipline = Some(value.route_type);
+        let route_discipline = Some(Discipline::from(MountainProjectRouteType::from(
+            value.route_type,
+        )));
         let ascent_discipline = None;
         let route_grade = Some(value.rating);
         let ascent_grade = Some(value.your_rating);
@@ -56,11 +94,35 @@ impl<'a> TryFrom<MountainProjectTick<'a>> for OpenTick<'a> {
     }
 }
 
+impl<'a> TryFrom<TheCragTick<'a>> for OpenTick<'a> {
+    type Error = ConversionError;
+
+    fn try_from(value: TheCragTick<'a>) -> Result<Self, Self::Error> {
+        let date = Some(value.ascent_date.date());
+        let route_name = Some(value.route_name);
+        let route_location = Some(value.crag_path);
+        let route_discipline = Some(Discipline::from(value.route_gear_style));
+        let ascent_discipline = Some(Discipline::from(value.ascent_gear_style));
+        let route_grade = Some(value.route_grade);
+        let ascent_grade = Some(value.ascent_grade);
+        let comment = Some(value.comment);
+
+        Ok(OpenTick {
+            date,
+            route_name,
+            route_location,
+            route_discipline,
+            ascent_discipline,
+            route_grade,
+            ascent_grade,
+            comment,
+        })
+    }
+}
+
 /// Errors in conversion of ticks
 #[non_exhaustive]
-pub enum ConversionError {
-    MountainProjectConversionError,
-}
+pub enum ConversionError {}
 
 #[cfg(test)]
 mod tests {
@@ -72,8 +134,8 @@ mod tests {
             date: NaiveDate::from_ymd_opt(2020, 1, 1),
             route_name: Some("A Route Name"),
             route_location: Some("Crag Name"),
-            route_discipline: Some("aid"),
-            ascent_discipline: Some("trad"),
+            route_discipline: Some(Discipline::Aid),
+            ascent_discipline: Some(Discipline::Trad),
             route_grade: Some("C3"),
             ascent_grade: Some("5.11"),
             comment: Some("What a fun route"),
