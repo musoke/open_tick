@@ -4,22 +4,33 @@ use url::Url;
 
 /// A tick as recorded in an export from
 /// `https://www.mountainproject.com/user/<userid>/<username>/tick-export`
-#[derive(Debug)]
+#[derive(Debug, PartialEq, serde::Deserialize)]
 pub struct MountainProjectTick {
+    #[serde(rename = "date")]
     pub date: Option<NaiveDate>,
     /// Mountain Project assigned name
+    #[serde(rename = "Route")]
     pub route: String,
     /// Mountain Project assigned grade
+    #[serde(rename = "Rating")]
     pub rating: String,
+    #[serde(rename = "Notes")]
     pub notes: String,
     /// URL of route on <https://www.mountainproject.com>
+    #[serde(rename = "URL")]
     pub url: Option<Url>,
+    #[serde(rename = "Pitches")]
     pub pitches: u8,
+    #[serde(rename = "Location")]
     pub location: String,
+    #[serde(rename = "Avg Stars")]
     pub avg_stars: f32,
     /// -1 if no rating, 1-5 otherwise
+    #[serde(rename = "Your Stars")]
     pub your_stars: i8,
+    #[serde(rename = "Style")]
     pub style: MountainProjectStyle,
+    #[serde(rename = "Lead Style")]
     pub lead_style: Option<MountainProjectLeadStyle>,
     /// The type of route climbed
     /// ### Examples
@@ -27,18 +38,22 @@ pub struct MountainProjectTick {
     /// Sport
     /// "Sport, TR"
     /// ```
+    #[serde(rename = "Route Type")]
     pub route_type: String,
     /// ticker's own grade, which may differ from "official" grade
+    #[serde(rename = "Your Rating")]
     pub your_rating: String,
     /// length of route in feet
+    #[serde(rename = "Length")]
     pub length: usize,
     /// unclear meaning, u16 might suffice
+    #[serde(rename = "Rating Code")]
     pub rating_code: u32,
 }
 
 /// Styles of ascent allowed by Mountain Project
 #[non_exhaustive]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, serde::Deserialize)]
 pub enum MountainProjectStyle {
     /// only for boulders
     Attempt,
@@ -58,7 +73,7 @@ pub enum MountainProjectStyle {
 
 /// Sub-styles for lead ascents
 #[non_exhaustive]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, serde::Deserialize)]
 pub enum MountainProjectLeadStyle {
     FellHung,
     Flash,

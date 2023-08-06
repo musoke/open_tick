@@ -4,7 +4,7 @@ pub mod mountain_project;
 pub mod thecrag;
 
 use mountain_project::MountainProjectRouteType;
-use mountain_project::MountainProjectTick;
+pub use mountain_project::MountainProjectTick;
 use thecrag::TheCragGearStyle;
 pub use thecrag::TheCragTick;
 
