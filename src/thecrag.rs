@@ -1,4 +1,4 @@
-use chrono::{DateTime,Utc};
+use chrono::{DateTime, Utc};
 // use std::convert::TryFrom;
 use url::Url;
 
@@ -87,8 +87,9 @@ pub struct TheCragTick {
     #[serde(rename = "Quality")]
     pub quality: String,
 
+    /// Optional because some ticks don't have a date
     #[serde(rename = "Ascent Date")]
-    pub ascent_date: DateTime<Utc>,
+    pub ascent_date: Option<DateTime<Utc>>,
 
     #[serde(rename = "Log Date")]
     pub log_date: DateTime<Utc>,
@@ -102,27 +103,68 @@ pub struct TheCragTick {
 #[derive(Debug, PartialEq, serde::Deserialize)]
 pub enum TheCragGearStyle {
     Aid,
+    Alpine,
     Boulder,
+    #[serde(rename = "Free solo")]
+    FreeSolo,
+    Second,
     Sport,
+    #[serde(rename = "Top rope")]
+    TopeRope,
     Trad,
+    Unknown,
+    #[serde(rename = "")]
+    None,
 }
 
 /// Ascent types allowed by theCrag
 #[non_exhaustive]
 #[derive(Debug, PartialEq, serde::Deserialize)]
 pub enum TheCragAscentType {
+    Aid,
+    #[serde(rename = "Aid solo")]
+    AidSolo,
+    Attempt,
+    Clean,
+    Dab,
     Flash,
-    Hangdog,
+    Ghost,
+    Greenpoint,
+    #[serde(rename = "Greenpoint onsight")]
+    GreenPointOnsight,
+    #[serde(rename = "Ground up red point")]
+    GroundUpRedPoint,
+    #[serde(rename = "Hang dog")]
+    HangDog,
+    #[serde(rename = "Lead solo")]
+    LeadSolo,
+    Mark,
     Onsight,
-
     #[serde(rename = "Pink point")]
-    Pinkpoint,
-
+    PinkPoint,
     Send,
-
     #[serde(rename = "Red point")]
-    Redpoint,
+    RedPoint,
     Repeat,
+    Retreat,
+    #[serde(rename = "Roped Solo")]
+    RopedSolo,
+    #[serde(rename = "Second clean")]
+    SecondClean,
+    #[serde(rename = "Second with rest")]
+    SecondWithRest,
+    Tick,
+    #[serde(rename = "Top rope")]
+    TopRope,
+    #[serde(rename = "Top rope clean")]
+    TopRopeClean,
+    #[serde(rename = "Top rope flash")]
+    TopRopeFlash,
+    #[serde(rename = "Top rope onsight")]
+    TopRopeOnsight,
+    #[serde(rename = "Top rope with rest")]
+    TopRopeWithRest,
+    Working,
 }
 
 /// ID of a route in theCrag's database

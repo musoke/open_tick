@@ -1,4 +1,4 @@
-use chrono::NaiveDate;
+use chrono::{DateTime, NaiveDate, Utc};
 
 pub mod mountain_project;
 pub mod thecrag;
@@ -98,7 +98,7 @@ impl TryFrom<TheCragTick> for OpenTick {
     type Error = ConversionError;
 
     fn try_from(value: TheCragTick) -> Result<Self, Self::Error> {
-        let date = Some(value.ascent_date.date_naive());
+        let date = value.ascent_date.map(|d: DateTime<Utc>| d.date_naive());
         let route_name = Some(value.route_name);
         let route_location = Some(value.crag_path);
         let route_discipline = Some(Discipline::from(value.route_gear_style));
