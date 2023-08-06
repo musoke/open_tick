@@ -6,7 +6,7 @@ pub mod thecrag;
 use mountain_project::MountainProjectRouteType;
 use mountain_project::MountainProjectTick;
 use thecrag::TheCragGearStyle;
-use thecrag::TheCragTick;
+pub use thecrag::TheCragTick;
 
 /// A tick
 ///
@@ -14,25 +14,25 @@ use thecrag::TheCragTick;
 /// # Examples
 #[non_exhaustive]
 #[derive(Debug)]
-pub struct OpenTick<'a> {
+pub struct OpenTick {
     /// Date the climbing happened
     ///
     /// May be extended in future to account for multi-day ascents and more precise times.
     pub date: Option<NaiveDate>,
     /// Name of the route
-    pub route_name: Option<&'a str>,
+    pub route_name: Option<String>,
     /// Location of the route
-    pub route_location: Option<&'a str>,
+    pub route_location: Option<String>,
     /// Type of route as most often climbed
     pub route_discipline: Option<Discipline>,
     /// Type of route as climbed in this ascent
     pub ascent_discipline: Option<Discipline>,
     /// Consensus grade of the route
-    pub route_grade: Option<&'a str>,
+    pub route_grade: Option<String>,
     /// Personal grade, for this ascent
-    pub ascent_grade: Option<&'a str>,
+    pub ascent_grade: Option<String>,
     /// Free-form comments
-    pub comment: Option<&'a str>,
+    pub comment: Option<String>,
 }
 
 /// Disciplines
@@ -66,10 +66,10 @@ impl From<TheCragGearStyle> for Discipline {
     }
 }
 
-impl<'a> TryFrom<MountainProjectTick<'a>> for OpenTick<'a> {
+impl TryFrom<MountainProjectTick> for OpenTick {
     type Error = ConversionError;
 
-    fn try_from(value: MountainProjectTick<'a>) -> Result<Self, Self::Error> {
+    fn try_from(value: MountainProjectTick) -> Result<Self, Self::Error> {
         let date = value.date;
         let route_name = Some(value.route);
         let route_location = Some(value.location);
@@ -94,11 +94,11 @@ impl<'a> TryFrom<MountainProjectTick<'a>> for OpenTick<'a> {
     }
 }
 
-impl<'a> TryFrom<TheCragTick<'a>> for OpenTick<'a> {
+impl TryFrom<TheCragTick> for OpenTick {
     type Error = ConversionError;
 
-    fn try_from(value: TheCragTick<'a>) -> Result<Self, Self::Error> {
-        let date = Some(value.ascent_date.date());
+    fn try_from(value: TheCragTick) -> Result<Self, Self::Error> {
+        let date = Some(value.ascent_date.date_naive());
         let route_name = Some(value.route_name);
         let route_location = Some(value.crag_path);
         let route_discipline = Some(Discipline::from(value.route_gear_style));
@@ -132,13 +132,13 @@ mod tests {
     fn a_tick() {
         let t = OpenTick {
             date: NaiveDate::from_ymd_opt(2020, 1, 1),
-            route_name: Some("A Route Name"),
-            route_location: Some("Crag Name"),
+            route_name: Some("A Route Name".to_string()),
+            route_location: Some("Crag Name".to_string()),
             route_discipline: Some(Discipline::Aid),
             ascent_discipline: Some(Discipline::Trad),
-            route_grade: Some("C3"),
-            ascent_grade: Some("5.11"),
-            comment: Some("What a fun route"),
+            route_grade: Some("C3".to_string()),
+            ascent_grade: Some("5.11".to_string()),
+            comment: Some("What a fun route".to_string()),
         };
 
         println!("{t:?}")

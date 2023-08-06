@@ -5,17 +5,17 @@ use url::Url;
 /// A tick as recorded in an export from
 /// `https://www.mountainproject.com/user/<userid>/<username>/tick-export`
 #[derive(Debug)]
-pub struct MountainProjectTick<'a> {
+pub struct MountainProjectTick {
     pub date: Option<NaiveDate>,
     /// Mountain Project assigned name
-    pub route: &'a str,
+    pub route: String,
     /// Mountain Project assigned grade
-    pub rating: &'a str,
-    pub notes: &'a str,
+    pub rating: String,
+    pub notes: String,
     /// URL of route on <https://www.mountainproject.com>
     pub url: Option<Url>,
     pub pitches: u8,
-    pub location: &'a str,
+    pub location: String,
     pub avg_stars: f32,
     /// -1 if no rating, 1-5 otherwise
     pub your_stars: i8,
@@ -27,9 +27,9 @@ pub struct MountainProjectTick<'a> {
     /// Sport
     /// "Sport, TR"
     /// ```
-    pub route_type: &'a str,
+    pub route_type: String,
     /// ticker's own grade, which may differ from "official" grade
-    pub your_rating: &'a str,
+    pub your_rating: String,
     /// length of route in feet
     pub length: usize,
     /// unclear meaning, u16 might suffice
@@ -76,8 +76,8 @@ pub enum MountainProjectRouteType {
     Unknown,
 }
 
-impl<'a> From<&'a str> for MountainProjectRouteType {
-    fn from(value: &'a str) -> Self {
+impl From<String> for MountainProjectRouteType {
+    fn from(value: String) -> Self {
         match value {
             _ => MountainProjectRouteType::Unknown,
         }
@@ -174,18 +174,18 @@ mod tests {
     fn a_tick() {
         let t: MountainProjectTick = MountainProjectTick {
             date: NaiveDate::from_ymd_opt(2020, 1, 1),
-            route: "a route name",
-            rating: "V2",
-            notes: "fund route",
+            route: "a route name".to_string(),
+            rating: "V2".to_string(),
+            notes: "fund route".to_string(),
             url: Url::parse("https://www.mountainproject.com/route/123456/route-name").ok(),
             pitches: 1,
-            location: "A place > the crag",
+            location: "A place > the crag".to_string(),
             avg_stars: 3.2,
             your_stars: 3,
             style: MountainProjectStyle::TR,
             lead_style: Some(MountainProjectLeadStyle::FellHung),
-            route_type: "\"Trad, TR\"",
-            your_rating: "5.10",
+            route_type: "\"Trad, TR\"".to_string(),
+            your_rating: "5.10".to_string(),
             length: 10,
             rating_code: 20008,
         };
