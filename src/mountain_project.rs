@@ -108,9 +108,10 @@ impl From<String> for MountainProjectRouteType {
 /// use open_tick::mountain_project::MountainProjectRouteId;
 /// let url = Url::parse("https://www.mountainproject.com/route/12321/route-name")
 /// .ok()
-/// .unwrap();
-/// let mp_id = MountainProjectRouteId::try_from(url).unwrap();
-/// assert_eq!(mp_id.0, 12321)
+/// .expect("valid URL");
+///
+/// let mp_id = MountainProjectRouteId::try_from(url).expect("valid route url");
+/// assert_eq!(mp_id, MountainProjectRouteId(12321))
 /// ```
 #[derive(Debug, PartialEq)]
 pub struct MountainProjectRouteId(pub usize);
@@ -128,7 +129,8 @@ impl TryFrom<Url> for MountainProjectRouteId {
 
             match path.next() {
                 Some("route") => {}
-                // "v" is another possibly valid value, but then don't know if it's a route or area
+                // "v" is another possibly valid value, but then one can't know if the url is for a
+                // route or an area.  MP doesn't seem to use these urls in CSV logbooks.
                 Some("v") => Err(MountainProjectIdConversionError::BadPath)?,
                 Some(_) => Err(MountainProjectIdConversionError::BadPath)?,
                 None => Err(MountainProjectIdConversionError::BadPath)?,
@@ -160,29 +162,45 @@ mod tests {
     use std::convert::TryFrom;
 
     #[test]
-    fn good_mp_url() {
+    fn mp_route_url_good() -> Result<(), MountainProjectIdConversionError> {
         let id = 123456;
         let url = Url::parse(&format!(
             "https://www.mountainproject.com/route/{id}/route-name"
         ))
         .ok()
-        .unwrap();
-        let mp_id = MountainProjectRouteId::try_from(url);
+        .expect("valid url");
+        let mp_id = MountainProjectRouteId::try_from(url)?;
 
-        assert_eq!(mp_id, Ok(MountainProjectRouteId(id)))
+        assert_eq!(mp_id, MountainProjectRouteId(id));
+        Ok(())
     }
 
     #[test]
-    fn bad_mp_route_url() {
+    fn mp_route_url_is_area() {
         let id = 123456;
         let url = Url::parse(&format!(
             "https://www.mountainproject.com/area/{id}/area-name"
         ))
         .ok()
-        .unwrap();
+        .expect("valid url");
+
         let mp_id = MountainProjectRouteId::try_from(url);
 
-        assert!(mp_id.is_err())
+        assert_eq!(mp_id, Err(MountainProjectIdConversionError::BadPath))
+    }
+
+    #[test]
+    fn mp_route_url_wrong_domain() {
+        let id = 123456;
+        let url = Url::parse(&format!(
+            "https://www.projectmountain.com/route/{id}/route-name"
+        ))
+        .ok()
+        .expect("valid url");
+
+        let mp_id = MountainProjectRouteId::try_from(url);
+
+        assert_eq!(mp_id, Err(MountainProjectIdConversionError::WrongDomain))
     }
 
     #[test]
