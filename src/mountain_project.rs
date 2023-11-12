@@ -4,35 +4,47 @@ use url::Url;
 
 /// A tick as recorded in an export from
 /// `https://www.mountainproject.com/user/<userid>/<username>/tick-export`
-#[derive(Debug, PartialEq, serde::Deserialize)]
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct MountainProjectTick {
-    #[serde(rename = "date")]
+    #[serde(rename = "Date")]
     pub date: Option<NaiveDate>,
+
     /// Mountain Project assigned name
     #[serde(rename = "Route")]
     pub route: String,
+
     /// Mountain Project assigned grade
     #[serde(rename = "Rating")]
     pub rating: String,
+
     #[serde(rename = "Notes")]
     pub notes: String,
+
     /// URL of route on <https://www.mountainproject.com>
     #[serde(rename = "URL")]
     pub url: Option<Url>,
+
     #[serde(rename = "Pitches")]
     pub pitches: u8,
+
     #[serde(rename = "Location")]
     pub location: String,
+
     #[serde(rename = "Avg Stars")]
     pub avg_stars: f32,
+
     /// -1 if no rating, 1-5 otherwise
     #[serde(rename = "Your Stars")]
     pub your_stars: i8,
+
     #[serde(rename = "Style")]
     pub style: MountainProjectStyle,
+
     #[serde(rename = "Lead Style")]
     pub lead_style: Option<MountainProjectLeadStyle>,
+
     /// The type of route climbed
+    ///
     /// ### Examples
     /// ```txt
     /// Sport
@@ -40,12 +52,15 @@ pub struct MountainProjectTick {
     /// ```
     #[serde(rename = "Route Type")]
     pub route_type: String,
+
     /// ticker's own grade, which may differ from "official" grade
     #[serde(rename = "Your Rating")]
     pub your_rating: String,
+
     /// length of route in feet
     #[serde(rename = "Length")]
     pub length: usize,
+
     /// unclear meaning, u16 might suffice
     #[serde(rename = "Rating Code")]
     pub rating_code: u32,
@@ -53,7 +68,7 @@ pub struct MountainProjectTick {
 
 /// Styles of ascent allowed by Mountain Project
 #[non_exhaustive]
-#[derive(Debug, PartialEq, serde::Deserialize)]
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 pub enum MountainProjectStyle {
     /// only for boulders
     Attempt,
@@ -73,7 +88,7 @@ pub enum MountainProjectStyle {
 
 /// Sub-styles for lead ascents
 #[non_exhaustive]
-#[derive(Debug, PartialEq, serde::Deserialize)]
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 pub enum MountainProjectLeadStyle {
     FellHung,
     Flash,
@@ -159,6 +174,7 @@ pub enum MountainProjectIdConversionError {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pretty_assertions::assert_eq;
     use std::convert::TryFrom;
 
     #[test]
@@ -204,7 +220,7 @@ mod tests {
     }
 
     #[test]
-    fn a_tick() {
+    fn init_tick() {
         let t: MountainProjectTick = MountainProjectTick {
             date: NaiveDate::from_ymd_opt(2020, 1, 1),
             route: "a route name".to_string(),
@@ -223,6 +239,39 @@ mod tests {
             rating_code: 20008,
         };
 
-        println!("{t:?}")
+        println!("{t:?}");
+    }
+
+    #[test]
+    fn from_csv() -> Result<(), Box<dyn std::error::Error>> {
+        let mp_csv = r#"Date,Route,Rating,Notes,URL,Pitches,Location,"Avg Stars","Your Stars",Style,"Lead Style","Route Type","Your Rating",Length,"Rating Code"
+2023-06-01,"Route Name",V1,,https://www.mountainproject.com/route/271828/route-name,1,"Area > Crag",2.5,-1,Send,,Boulder,,10,20300
+"#;
+
+        let mut ticks = Vec::new();
+        let mut reader = csv::Reader::from_reader(mp_csv.as_bytes());
+
+        for record in reader.deserialize() {
+            let record: MountainProjectTick = record?;
+
+            assert_eq!(record.date, NaiveDate::from_ymd_opt(2023, 06, 01));
+            assert_eq!(record.route, "Route Name");
+            assert_eq!(record.length, 10);
+
+            ticks.push(record);
+        }
+
+        let mut writer = csv::Writer::from_writer(vec![]);
+        for record in ticks.iter() {
+            writer.serialize(record)?;
+        }
+
+        // Check that record serializes to original, modulo quoting strings with spaces
+        assert_eq!(
+            mp_csv.replace("\"", ""),
+            String::from_utf8(writer.into_inner()?).unwrap()
+        );
+
+        Ok(())
     }
 }
