@@ -122,6 +122,7 @@ impl TryFrom<TheCragTick> for OpenTick {
 
 /// Errors in conversion of ticks
 #[non_exhaustive]
+#[derive(Debug)]
 pub enum ConversionError {}
 
 #[cfg(test)]
