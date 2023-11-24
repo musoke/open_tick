@@ -37,22 +37,29 @@ pub struct OpenTick {
 
 /// Disciplines
 #[non_exhaustive]
-#[derive(Debug, PartialEq)]
-pub enum Discipline {
-    Aid,
-    Bouldering,
-    DeepWaterSolo,
-    Ice,
-    Sport,
-    Trad,
-    Unknown,
+#[derive(Debug, Default, PartialEq)]
+pub struct Discipline {
+    aid: bool,
+    bouldering: bool,
+    deep_water_solo: bool,
+    ice: bool,
+    sport: bool,
+    top_rope: bool,
+    trad: bool,
+    unknown: bool,
 }
 
 impl From<MountainProjectRouteType> for Discipline {
     fn from(value: MountainProjectRouteType) -> Self {
-        match value {
-            MountainProjectRouteType::Unknown => Discipline::Unknown,
-            _ => Discipline::Unknown,
+        Discipline {
+            aid: false, // TODO
+            bouldering: value.boulder,
+            deep_water_solo: false, // TODO
+            ice: false,             // TODO
+            sport: value.sport,
+            trad: value.trad,
+            top_rope: value.top_rope,
+            unknown: value.unknown,
         }
     }
 }
@@ -60,8 +67,33 @@ impl From<MountainProjectRouteType> for Discipline {
 impl From<TheCragGearStyle> for Discipline {
     fn from(value: TheCragGearStyle) -> Self {
         match value {
-            TheCragGearStyle::Boulder => Discipline::Bouldering,
-            _ => Discipline::Unknown,
+            TheCragGearStyle::Aid => Discipline {
+                aid: true,
+                ..Default::default()
+            },
+            TheCragGearStyle::Boulder => Discipline {
+                bouldering: true,
+                ..Default::default()
+            },
+            TheCragGearStyle::Sport => Discipline {
+                sport: true,
+                ..Default::default()
+            },
+            TheCragGearStyle::TopRope => Discipline {
+                top_rope: true,
+                ..Default::default()
+            },
+            TheCragGearStyle::Trad => Discipline {
+                trad: true,
+                ..Default::default()
+            },
+            TheCragGearStyle::Unknown => Discipline {
+                unknown: true,
+                ..Default::default()
+            },
+            _ => Discipline {
+                ..Default::default()
+            },
         }
     }
 }
@@ -135,8 +167,14 @@ mod tests {
             date: NaiveDate::from_ymd_opt(2020, 1, 1),
             route_name: Some("A Route Name".to_string()),
             route_location: Some("Crag Name".to_string()),
-            route_discipline: Some(Discipline::Aid),
-            ascent_discipline: Some(Discipline::Trad),
+            route_discipline: Some(Discipline {
+                aid: true,
+                ..Default::default()
+            }),
+            ascent_discipline: Some(Discipline {
+                trad: true,
+                ..Default::default()
+            }),
             route_grade: Some("C3".to_string()),
             ascent_grade: Some("5.11".to_string()),
             comment: Some("What a fun route".to_string()),

@@ -1,5 +1,8 @@
 use chrono::NaiveDate;
+use serde::de::{self, Deserialize, Deserializer, Visitor};
+use serde::{Serialize, Serializer};
 use std::convert::TryFrom;
+use std::fmt;
 use url::Url;
 
 /// A tick as recorded in an export from
@@ -51,7 +54,7 @@ pub struct MountainProjectTick {
     /// "Sport, TR"
     /// ```
     #[serde(rename = "Route Type")]
-    pub route_type: String,
+    pub route_type: MountainProjectRouteType,
 
     /// ticker's own grade, which may differ from "official" grade
     #[serde(rename = "Your Rating")]
@@ -97,20 +100,100 @@ pub enum MountainProjectLeadStyle {
     Redpoint,
 }
 
+/// Discipline of a route from Mountain Project
+///
+/// Mountain Project encodes these as a comma separated string of routes types.
+///
+/// For example, a sport-only route gets value `Sport`, and a trad and top rope route gets value
+/// `"Trad, TR"`.
+///
+/// # Examples
+/// ```
+/// use open_tick::mountain_project::MountainProjectRouteType;
+///
+/// let style_str = "\"Trad, TR\"";
+/// let deserialized: MountainProjectRouteType = serde_json::from_str(style_str)
+///                                                 .expect("good string");
+///
+/// assert!(deserialized.boulder == false);
+/// assert!(deserialized.top_rope == true);
+/// assert!(deserialized.trad == true);
+/// ```
 #[non_exhaustive]
-#[derive(Debug, PartialEq)]
-pub enum MountainProjectRouteType {
-    Sport,
-    TR,
-    Trad,
-    Unknown,
+#[derive(Debug, Default, PartialEq)]
+pub struct MountainProjectRouteType {
+    pub boulder: bool,
+    pub sport: bool,
+    pub top_rope: bool,
+    pub trad: bool,
+    pub unknown: bool,
 }
 
-impl From<String> for MountainProjectRouteType {
-    fn from(value: String) -> Self {
-        match value {
-            _ => MountainProjectRouteType::Unknown,
+// TODO: should be more rigorous about unexpected values
+impl From<&str> for MountainProjectRouteType {
+    fn from(value: &str) -> Self {
+        MountainProjectRouteType {
+            boulder: value.contains("Boulder"),
+            sport: value.contains("Sport"),
+            top_rope: value.contains("TR"),
+            trad: value.contains("Trad"),
+            unknown: value.contains("Unknown"),
         }
+    }
+}
+
+struct RouteTypeVisitor;
+
+impl<'de> Visitor<'de> for RouteTypeVisitor {
+    type Value = MountainProjectRouteType;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("a comma separated list of route types")
+    }
+
+    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(MountainProjectRouteType::from(value))
+    }
+}
+
+impl<'de> Deserialize<'de> for MountainProjectRouteType {
+    fn deserialize<D>(deserializer: D) -> Result<MountainProjectRouteType, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_str(RouteTypeVisitor)
+    }
+}
+
+impl Serialize for MountainProjectRouteType {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut s = vec![];
+
+        if self.boulder {
+            s.push("Boulder");
+        }
+        if self.sport {
+            s.push("Sport");
+        }
+        if self.top_rope {
+            s.push("TR");
+        }
+        if self.trad {
+            s.push("trad");
+        }
+        if self.unknown {
+            s.push("Unknown");
+        }
+
+        let joined = s.join(", "); // TODO: joined allocates?
+
+        serializer.serialize_str(&joined)
     }
 }
 
@@ -233,7 +316,7 @@ mod tests {
             your_stars: 3,
             style: MountainProjectStyle::TR,
             lead_style: Some(MountainProjectLeadStyle::FellHung),
-            route_type: "\"Trad, TR\"".to_string(),
+            route_type: "\"Trad, TR\"".try_into().unwrap(),
             your_rating: "5.10".to_string(),
             length: 10,
             rating_code: 20008,
@@ -257,6 +340,13 @@ mod tests {
             assert_eq!(record.date, NaiveDate::from_ymd_opt(2023, 06, 01));
             assert_eq!(record.route, "Route Name");
             assert_eq!(record.length, 10);
+            assert_eq!(
+                record.route_type,
+                MountainProjectRouteType {
+                    boulder: true,
+                    ..Default::default()
+                }
+            );
 
             ticks.push(record);
         }
@@ -269,7 +359,9 @@ mod tests {
         // Check that record serializes to original, modulo quoting strings with spaces
         assert_eq!(
             mp_csv.replace("\"", ""),
-            String::from_utf8(writer.into_inner()?).unwrap()
+            String::from_utf8(writer.into_inner()?)
+                .unwrap()
+                .replace("\"", "")
         );
 
         Ok(())

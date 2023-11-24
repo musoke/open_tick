@@ -110,7 +110,7 @@ pub enum TheCragGearStyle {
     Second,
     Sport,
     #[serde(rename = "Top rope")]
-    TopeRope,
+    TopRope,
     Trad,
     Unknown,
     #[serde(rename = "")]
